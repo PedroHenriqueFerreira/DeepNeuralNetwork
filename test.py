@@ -11,7 +11,7 @@ with open('./GAN.pkl', 'rb') as file:
 
 root = Tk()
 
-CANVAS_SIZE = 128
+CANVAS_SIZE = 512
 
 canvas = Canvas(root, width=CANVAS_SIZE, height=CANVAS_SIZE)
 

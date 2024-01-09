@@ -454,6 +454,14 @@ class BatchNormalization(Layer):
         
         batch_size = output_gradient.shape[0]
         
+        #
+        
+        # step 8
+        dgamma = np.sum(self.input_normalized * output_gradient, axis=0)
+        print(dgamma.shape, self.weights.shape)
+        
+        #
+        
         return (1 / batch_size) * self.weights * self.istd * (
             batch_size * output_gradient 
             - self.bias_gradient

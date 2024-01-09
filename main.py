@@ -135,6 +135,9 @@ class GAN:
 
             images = images[np.random.permutation(size)]
 
+            disc_loss = []
+            gen_loss = []
+
             for batch in range(batchs):
                 print('-' * 75)
 
@@ -143,16 +146,13 @@ class GAN:
                 print('Training discriminator...')
 
                 real_images = images[batch * batch_size: (batch + 1) * batch_size]
-                fake_images = self.generator.forward(
-                    np.random.randn(batch_size, self.noise_size), False)
+                fake_images = self.generator.forward(np.random.randn(batch_size, self.noise_size), False)
 
                 labels_real = np.random.uniform(0.95, 1, (batch_size, 1))
                 labels_fake = np.random.uniform(0, 0.05, (batch_size, 1))
 
-                d_loss_real = self.discriminator.train_on_batch(
-                    real_images, labels_real)
-                d_loss_fake = self.discriminator.train_on_batch(
-                    fake_images, labels_fake)
+                d_loss_real = self.discriminator.train_on_batch(real_images, labels_real)
+                d_loss_fake = self.discriminator.train_on_batch(fake_images, labels_fake)
 
                 d_loss = (d_loss_real + d_loss_fake) / 2
 
@@ -161,15 +161,15 @@ class GAN:
                 gen_images = self.generator.forward(
                     np.random.randn(batch_size, self.noise_size))
 
-                g_loss, g_err = self.discriminator.not_train_on_batch(
-                    gen_images, gen_labels)
+                g_loss, g_err = self.discriminator.not_train_on_batch(gen_images, gen_labels)
 
                 self.generator.backward(g_err)
-                self.generator.optimizer(
-                    self.generator.parameters, self.generator.gradients)
+                self.generator.optimizer(self.generator.parameters, self.generator.gradients)
 
-                print(
-                    f'Discriminator Loss: {d_loss} | Generator Loss: {g_loss}')
+                disc_loss.append(d_loss)
+                gen_loss.append(g_loss)
+
+                print(f'Discriminator Loss: {d_loss} | Generator Loss: {g_loss}')
 
                 if batch % save_interval == 0:
                     print('-' * 75)
@@ -183,6 +183,9 @@ class GAN:
                     with open(f'{self.model_dir}/GAN.pkl', 'wb') as f:
                         pkl.dump(self, f)
 
+            print('=' * 75)
+            print(f'Disc epoch loss: {np.mean(disc_loss)} | Gen epoch Loss: {np.mean(gen_loss)}')
+            
 if __name__ == '__main__':
     if isfile('./GAN.pkl'):
         gan = pkl.load(open('./GAN.pkl', 'rb'))
