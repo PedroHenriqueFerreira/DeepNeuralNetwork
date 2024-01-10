@@ -480,45 +480,13 @@ class BatchNormalization(Layer):
                 self.input_normalized * output_gradient, axis=0)
 
         batch_size = output_gradient.shape[0]
-
-        #
-
-        dxhat = output_gradient * self.weights
-
-        distd = np.sum(dxhat * self.input_centered, axis=0)
-
-        dxmu1 = dxhat * self.istd
-
-        dstd = -1 * self.ivar * distd
-
-        dvar = 0.5 * self.ivar * dstd
-
-        dsq = (1 / batch_size) * dvar * np.ones_like(output_gradient)
-
-        dxmu2 = 2 * self.input_centered * dsq
-
-        dx1 = dxmu1 + dxmu2
-
-        dmu = -1 * np.sum(dxmu1 + dxmu2, axis=0)
-
-        dx2 = (1 / batch_size) * dmu * np.ones_like(output_gradient)
-
-        dx = dx1 + dx2
-
-        dxx = (
-            (output_gradient * self.weights * self.istd) + 
-            (self.input_centered * (1 / batch_size) * self.ivar * -1 * self.ivar * np.sum(output_gradient * self.weights * self.input_centered, axis=0) * np.ones_like(output_gradient)
-            )
-        ) + dx2
-
-        dx_ = (1 / batch_size) * self.weights * self.istd * (
+        
+        return (1 / batch_size) * self.weights * self.istd * (
             batch_size * output_gradient
             - self.bias_gradient
             - self.input_centered * self.ivar
             * np.sum(output_gradient * self.input_centered, axis=0)
         )
-
-        return dx
 
     def get_output_shape(self):
         return self.input_shape
