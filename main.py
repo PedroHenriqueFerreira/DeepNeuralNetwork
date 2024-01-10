@@ -41,18 +41,18 @@ class GAN:
 
         d = NeuralNetwork(d_optimizer, d_loss)
 
-        d.add(Conv2D(16, (3, 3), stride=2, input_shape=self.img_shape))
+        d.add(Conv2D(32, (3, 3), stride=2, input_shape=self.img_shape))
         d.add(LeakyReLU())
-
-        d.add(Conv2D(32, (3, 3), stride=2))
-        d.add(LeakyReLU())
-        d.add(Dropout())
 
         d.add(Conv2D(64, (3, 3), stride=2))
         d.add(LeakyReLU())
         d.add(Dropout())
 
         d.add(Conv2D(128, (3, 3), stride=2))
+        d.add(LeakyReLU())
+        d.add(Dropout())
+
+        d.add(Conv2D(256, (3, 3), stride=2))
         d.add(LeakyReLU())
         d.add(Dropout())
 
@@ -69,10 +69,15 @@ class GAN:
 
         g = NeuralNetwork(g_optimizer, g_loss)
 
-        g.add(Dense(128*8*8, input_shape=(self.noise_size,)))
+        g.add(Dense(256*8*8, input_shape=(self.noise_size,)))
         g.add(BatchNormalization())
         g.add(LeakyReLU())
-        g.add(Reshape((128, 8, 8)))
+        g.add(Reshape((256, 8, 8)))
+
+        g.add(UpSampling2D())
+        g.add(Conv2D(256, (3, 3)))
+        g.add(BatchNormalization())
+        g.add(LeakyReLU())
 
         g.add(UpSampling2D())
         g.add(Conv2D(128, (3, 3)))
@@ -86,11 +91,6 @@ class GAN:
 
         g.add(UpSampling2D())
         g.add(Conv2D(32, (3, 3)))
-        g.add(BatchNormalization())
-        g.add(LeakyReLU())
-
-        g.add(UpSampling2D())
-        g.add(Conv2D(16, (3, 3)))
         g.add(BatchNormalization())
         g.add(LeakyReLU())
 
@@ -120,7 +120,7 @@ class GAN:
             Image.fromarray(image, mode='RGB').save(
                 f'{self.output_dir}/{int(time())}{i}.png')
 
-    def fit(self, batch_size: int = 16, epochs: int = 1000, save_interval: int = 5) -> None:
+    def fit(self, batch_size: int = 8, epochs: int = 1000, save_interval: int = 5) -> None:
         images = self.get_images()
         size = images.shape[0]
 

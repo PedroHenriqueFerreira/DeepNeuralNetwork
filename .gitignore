@@ -1,4 +1,5 @@
 /images
 /generated
+/generated__
 /model
 /*.pkl
