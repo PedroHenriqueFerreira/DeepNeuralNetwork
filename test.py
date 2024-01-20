@@ -15,7 +15,7 @@ INPUT_COLS = 10
 
 class UI:
     def __init__(self):
-        self.gan = pkl.load(open('./GAN_670.pkl', 'rb'))
+        self.gan = pkl.load(open('./GAN.pkl', 'rb'))
         
         self.root = Tk()
         
