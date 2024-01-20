@@ -4,8 +4,8 @@ import numpy as np
 from numpy import float64
 from numpy.typing import NDArray
 
-from os import listdir
-from os.path import isfile
+from os import listdir, mkdir
+from os.path import isfile, isdir
 
 from PIL import Image
 from time import time
@@ -18,14 +18,18 @@ from layers import *
 from neural_network import NeuralNetwork
 
 class GAN:
-    def __init__(self, root_dir: str, output_dir: str, model_dir: str):
+    def __init__(self, input_dir: str, output_dir: str, model_dir: str):
         self.noise_size = 100
 
         self.img_shape = (3, 128, 128)
 
-        self.root_dir = root_dir
+        self.input_dir = input_dir
         self.output_dir = output_dir
         self.model_dir = model_dir
+
+        for directory in [self.input_dir, self.output_dir, self.model_dir]:
+            if not isdir(directory):
+                mkdir(directory)
 
         self.noise = np.random.randn(5, self.noise_size)
 
@@ -103,9 +107,9 @@ class GAN:
     def get_images(self) -> NDArray[float64]:
         images = []
 
-        for file in listdir(self.root_dir):
+        for file in listdir(self.input_dir):
             image = np.array(Image.open(
-                f'{self.root_dir}/{file}').convert('RGB')).astype(float64)
+                f'{self.input_dir}/{file}').convert('RGB')).astype(float64)
             image = image.transpose((2, 0, 1))
 
             images.append((image - 127.5) / 127.5)
@@ -187,8 +191,8 @@ class GAN:
             
 if __name__ == '__main__':
     if isfile('./GAN.pkl'):
-        gan = pkl.load(open('./GAN.pkl', 'rb'))
+        gan = pkl.load(open('./model/GAN.pkl', 'rb'))
     else:
-        gan = GAN('./images', './generated', '.')
+        gan = GAN('./images', './out', './model')
 
     gan.fit()

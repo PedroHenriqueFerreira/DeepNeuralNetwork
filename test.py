@@ -1,9 +1,8 @@
 from tkinter import Tk, Button, Canvas, Frame, Scale, Label
 
-from tkinter.ttk import Style
-
 import numpy as np
 import pickle as pkl
+
 from PIL import Image
 from PIL.ImageTk import PhotoImage
 
@@ -13,85 +12,88 @@ CANVAS_SIZE = 256
 INPUT_ROWS = 10
 INPUT_COLS = 10
 
-class UI:
+class UI(Tk):
     def __init__(self):
-        self.gan = pkl.load(open('./GAN.pkl', 'rb'))
+        Tk.__init__(self)
         
-        self.root = Tk()
+        self.noise = np.zeros((1, 100))
         
-        self.canvas_frame = Frame(self.root)
+        self.gan = pkl.load(open('./model/GAN.pkl', 'rb'))
         
-        self.noise_canvas = Canvas(self.canvas_frame, width=CANVAS_SIZE, height=CANVAS_SIZE, bd=0)
-        self.arrow = Label(self.canvas_frame, text='→', font=('Arial', 30, 'bold'))
-        self.generator_canvas = Canvas(self.canvas_frame, width=CANVAS_SIZE, height=CANVAS_SIZE, bd=0)
+        self.title('GAN')
         
+        self.configure(bg='#222')
+        
+        self.option_add('*Background', '#222')
+        self.option_add('*Foreground', '#FFF')
+        self.option_add('*Font', ('Arial', 10, 'bold'))
+        self.option_add('*HighlightThickness', 0)
+        self.option_add('*BorderWidth', 0)
+        
+        self.option_add('*Button.Background', '#3C80EC')
+        self.option_add('*Button.DisabledForeground', '#5EA2FE')
+        
+        self.option_add('*Label.Font', ('Arial', 30, 'bold'))
+                        
+        canvas_frame = Frame(self)
+        
+        self.noise_canvas = Canvas(canvas_frame, width=CANVAS_SIZE, height=CANVAS_SIZE)
         self.noise_canvas.grid(row=0, column=0, padx=50, pady=10)
-        self.arrow.grid(row=0, column=1)
+        
+        arrow_label = Label(canvas_frame, text='→')
+        arrow_label.grid(row=0, column=1)
+        
+        self.generator_canvas = Canvas(canvas_frame, width=CANVAS_SIZE, height=CANVAS_SIZE)
         self.generator_canvas.grid(row=0, column=2, padx=50, pady=10)
         
-        self.canvas_frame.pack(expand=True)
+        canvas_frame.pack(expand=True)
         
-        self.sliders_frame = Frame(self.root)
+        sliders_frame = Frame(self)
         
-        self.noise = np.random.randn(1, 100)
+        self.sliders = self.create_sliders(sliders_frame)
         
-        self.sliders = self.create_sliders()
-        self.update_sliders()
-        
-        self.sliders_frame.pack(expand=True, padx=50, pady=10)
+        sliders_frame.pack(expand=True, padx=50, pady=10)
 
-        self.buttons_frame = Frame(self.root)
+        buttons_frame = Frame(self)
         
-        self.options_frame = Frame(self.buttons_frame)
-        
-        random_button = Button(self.options_frame, text='RANDOMIZE', command=self.randomize, bd=0, bg='#fff')
-        variation_button = Button(self.options_frame, text='VARIATION', command=self.variate, bd=0, bg='#fff')
-        
-        generate_button = Button(self.buttons_frame, text='GENERATE', command=self.generate, bd=0, bg='#fff')
+        variate_button = Button(buttons_frame, text='VARIATION', command=self.variate)
+        new_button = Button(buttons_frame, text='NEW', command=self.new)
+        self.generate_button = Button(buttons_frame, text='GENERATE', command=self.generate, state='disabled')
     
-        random_button.grid(row=0, column=0)
-        variation_button.grid(row=0, column=1)
+        variate_button.grid(row=0, column=0, padx=2)
+        new_button.grid(row=0, column=1, padx=2)
+        self.generate_button.grid(row=0, column=2, padx=(390, 0))
         
-        self.options_frame.grid(row=0, column=0, padx=(0, 100))
-        
-        generate_button.grid(row=0, column=1, padx=(100, 0))
-        
-        self.buttons_frame.pack(expand=True, padx=50, pady=10)
+        buttons_frame.pack(expand=True, padx=50, pady=10)
         
         self.generate()
         
-        Style(self.root).theme_use('clam')
-        
-        self.root.mainloop()
-        
-    def create_sliders(self):
+    def create_sliders(self, parent):
         sliders = []
         
         for i in range(INPUT_ROWS):
             for j in range(INPUT_COLS):
                 
                 slider = Scale(
-                    self.sliders_frame, 
+                    parent, 
                     from_=-5, 
                     to=5, 
-                    orient='horizontal', 
-                    resolution=0.02, 
+                    resolution=0.01, 
                     length=100,
-                    command=self.update_noise,
                     width=5,
-                    bd=0,
-                    font=('Arial', 10, 'bold')
+                    sliderlength=20,
+                    orient='horizontal', 
+                    command=self.update_noise,
+                    troughcolor='#444',
                 )
                 
-                slider.grid(row=i, column=j, pady=5)
+                slider.set(np.random.randn())
+                
+                slider.grid(row=i, column=j, pady=5, padx=2)
                 
                 sliders.append(slider)
                 
         return sliders
-
-    def update_sliders(self):
-        for slider, value in zip(self.sliders, self.noise[0]):
-            slider.set(value)
 
     def update_noise(self, *args):
         for i in range(INPUT_ROWS * INPUT_COLS):
@@ -110,15 +112,14 @@ class UI:
         self.noise_canvas.image = photo_image # type: ignore
 
     def generate(self):
+        self.generate_button.config(state='disabled')
+        
         images = self.gan.generator.forward(self.noise, False)
-        avaliations = self.gan.discriminator.forward(images, False)
         
         image = (images[0] * 127.5 + 127.5).astype(np.uint8)
         image = image.transpose((1, 2, 0))
         image = Image.fromarray(image, mode='RGB')
         image = image.resize((CANVAS_SIZE, CANVAS_SIZE))
-        
-        print(avaliations.mean())
 
         photo_image = PhotoImage(image)
         
@@ -128,15 +129,15 @@ class UI:
         self.generator_canvas.image = photo_image # type: ignore
         
     def variate(self):
-        for i in range(INPUT_ROWS * INPUT_COLS):
-            # if np.random.uniform(0, 1) >= 0.25:
-            #     continue
-            
-            self.noise[0][i] += np.random.randn() * 0.2
-            
-        self.update_sliders()
+        self.generate_button.config(state='normal')
         
-    def randomize(self):
-        self.noise = np.random.randn(1, 100)
-        self.update_sliders()
-UI()
+        np.random.choice(self.sliders).set(np.random.randn())
+        
+    def new(self):
+        self.generate_button.config(state='normal')
+        
+        for slider in self.sliders:
+            slider.set(np.random.randn())
+            
+tk = UI()
+tk.mainloop()
