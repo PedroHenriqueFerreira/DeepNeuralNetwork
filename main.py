@@ -46,15 +46,15 @@ class GAN:
 
         d.add(Conv2D(64, (3, 3), stride=2))
         d.add(LeakyReLU())
-        d.add(Dropout())
+        d.add(Dropout(0.3))
 
         d.add(Conv2D(128, (3, 3), stride=2))
         d.add(LeakyReLU())
-        d.add(Dropout())
+        d.add(Dropout(0.3))
 
         d.add(Conv2D(256, (3, 3), stride=2))
         d.add(LeakyReLU())
-        d.add(Dropout())
+        d.add(Dropout(0.3))
 
         d.add(Flatten())
 
@@ -117,8 +117,7 @@ class GAN:
             image = (images[i] * 127.5 + 127.5).astype(np.uint8)
             image = image.transpose((1, 2, 0))
 
-            Image.fromarray(image, mode='RGB').save(
-                f'{self.output_dir}/{int(time())}{i}.png')
+            Image.fromarray(image, mode='RGB').save(f'{self.output_dir}/{int(time())}{i}.png')
 
     def fit(self, batch_size: int = 8, epochs: int = 1000, save_interval: int = 5) -> None:
         images = self.get_images()
